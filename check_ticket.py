@@ -32,13 +32,19 @@ send_telegram("✅ SATURDAY BOT TEST")
 
 for camping_type, url in URLS.items():
 
-    html = requests.get(
-        url,
-        headers={"User-Agent": "Mozilla/5.0"},
-        timeout=15
-    ).text
+    try:
+        html = requests.get(
+            url,
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=30
+        ).text
+
+    except Exception as e:
+        print(f"ERROR ({camping_type}): {e}")
+        continue
 
     if "No tickets available." in html:
+
         print(f"NO TICKETS ({camping_type})")
 
     else:
@@ -57,4 +63,4 @@ Open immediately:
         print(alert_message)
 
         for i in range(5):
-            send_telegram(alert_message)
+            send_telegram(alert_message)e)
