@@ -1,12 +1,9 @@
-
 import os
+import time
 import requests
 
 TOKEN = os.getenv("SISTER_TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("SISTER_TELEGRAM_CHAT_ID")
-
-print("TOKEN FOUND:", TOKEN is not None)
-print("CHAT_ID FOUND:", CHAT_ID is not None)
 
 URLS = {
     "Camping CHILL": "https://tickets.pukkelpop.be/en/meetup/demand/?type=day3&camping=a&price=all#tickets",
@@ -14,8 +11,12 @@ URLS = {
     "WITHOUT camping": "https://tickets.pukkelpop.be/en/meetup/demand/?type=day3&camping=n&price=all#tickets"
 }
 
+CHECK_INTERVAL_SECONDS = 60
+
+previous_state = {}
+
 def send_telegram(message):
-    response = requests.post(
+    requests.post(
         f"https://api.telegram.org/bot{TOKEN}/sendMessage",
         data={
             "chat_id": CHAT_ID,
@@ -25,48 +26,50 @@ def send_telegram(message):
         timeout=15
     )
 
-    print("Telegram status:", response.status_code)
+print("Sunday monitor started")
 
-# TEST MESSAGE
-send_telegram("✅ SUNDAY BOT TEST")
+while True:
 
-for camping_type, url in URLS.items():
+    for camping_type, url in URLS.items():
 
-    try:
+        try:
 
-        response = requests.get(
-            url,
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=30
+            response = requests.get(
+                url,
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=30
+            )
+
+            response.raise_for_status()
+
+            html = response.text
+
+        except Exception as e:
+
+            print(f"ERROR ({camping_type}): {e}")
+            continue
+
+        ticket_found = "No tickets available." not in html
+
+        if camping_type not in previous_state:
+            previous_state[camping_type] = ticket_found
+
+        if ticket_found and not previous_state[camping_type]:
+
+            message = (
+                "🚨🚨🚨 PUKKELPOP SUNDAY TICKET FOUND 🚨🚨🚨\n\n"
+                f"Camping option: {camping_type}\n\n"
+                f"{url}"
+            )
+
+            for i in range(5):
+                send_telegram(message)
+
+        previous_state[camping_type] = ticket_found
+
+        print(
+            f"{camping_type}: "
+            f"{'TICKET FOUND' if ticket_found else 'NO TICKETS'}"
         )
 
-        response.raise_for_status()
-
-        html = response.text
-
-    except Exception as e:
-
-        print(f"ERROR ({camping_type}): {e}")
-        continue
-
-    if "No tickets available." in html:
-
-        print(f"NO TICKETS ({camping_type})")
-
-    else:
-
-        alert_message = f"""
-🚨🚨🚨 PUKKELPOP SUNDAY TICKET FOUND 🚨🚨🚨
-
-Camping option:
-{camping_type}
-
-Open immediately:
-
-{url}
-"""
-
-        print(alert_message)
-
-        for i in range(5):
-            send_telegram(alert_message)
+    time.sleep(CHECK_INTERVAL_SECONDS)
