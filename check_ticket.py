@@ -13,7 +13,7 @@ URLS = {
     "WITHOUT camping": "https://tickets.pukkelpop.be/en/meetup/demand/?type=day2&camping=n&price=all#tickets"
 }
 
-CHECK_INTERVAL_SECONDS = 60
+CHECK_INTERVAL_SECONDS = 20
 
 previous_state = {}
 
