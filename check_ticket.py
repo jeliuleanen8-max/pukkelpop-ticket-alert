@@ -1,8 +1,11 @@
 import os
 import requests
 
-TOKEN = os.environ["TELEGRAM_TOKEN"]
-CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+print("TOKEN FOUND:", TOKEN is not None)
+print("CHAT_ID FOUND:", CHAT_ID is not None)
 
 URLS = {
     "Camping CHILL": "https://tickets.pukkelpop.be/en/meetup/demand/?type=day2&camping=a&price=all#tickets",
@@ -21,11 +24,11 @@ def send_telegram(message):
         timeout=15
     )
 
-    print(f"Telegram status: {response.status_code}")
+    print("Telegram status:", response.status_code)
     print(response.text)
 
 # TEST MESSAGE
-send_telegram("Pukkelpop bot test successful")
+send_telegram("✅ SATURDAY BOT TEST")
 
 for camping_type, url in URLS.items():
 
@@ -39,11 +42,17 @@ for camping_type, url in URLS.items():
         print(f"NO TICKETS ({camping_type})")
 
     else:
-        alert_message = (
-            "PUKKELPOP SATURDAY TICKET FOUND\n\n"
-            f"Camping option: {camping_type}\n\n"
-            f"{url}"
-        )
+
+        alert_message = f"""
+🚨🚨🚨 PUKKELPOP SATURDAY TICKET FOUND 🚨🚨🚨
+
+Camping option:
+{camping_type}
+
+Open immediately:
+
+{url}
+"""
 
         print(alert_message)
 
