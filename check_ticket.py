@@ -1,5 +1,7 @@
 import os
 import time
+import re
+import html as html_module
 import requests
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -15,6 +17,7 @@ CHECK_INTERVAL_SECONDS = 60
 
 previous_state = {}
 
+
 def send_telegram(message):
     requests.post(
         f"https://api.telegram.org/bot{TOKEN}/sendMessage",
@@ -25,6 +28,39 @@ def send_telegram(message):
         },
         timeout=15
     )
+
+
+def extract_ticket_section(page_html):
+
+    decoded = html_module.unescape(page_html)
+
+    if "Available tickets" in decoded:
+        return decoded.split("Available tickets", 1)[1]
+
+    return decoded
+
+
+def extract_price(ticket_section):
+
+    prices = re.findall(
+        r"€\s*\d+(?:[.,]\d{1,2})?",
+        ticket_section
+    )
+
+    if prices:
+        return prices[0]
+
+    prices_alt = re.findall(
+        r"EUR\s*\d+(?:[.,]\d{1,2})?",
+        ticket_section,
+        re.IGNORECASE
+    )
+
+    if prices_alt:
+        return prices_alt[0]
+
+    return "Price not found"
+
 
 print("Saturday monitor started")
 
@@ -42,23 +78,35 @@ while True:
 
             response.raise_for_status()
 
-            html = response.text
+            page_html = response.text
 
         except Exception as e:
 
             print(f"ERROR ({camping_type}): {e}")
             continue
 
-        ticket_found = "No tickets available." not in html
+        ticket_section = extract_ticket_section(page_html)
+
+        ticket_found = (
+            "No tickets available." not in ticket_section
+        )
+
+        price = extract_price(ticket_section)
 
         if camping_type not in previous_state:
             previous_state[camping_type] = ticket_found
+
+        if ticket_found:
+
+            print("TICKET SECTION PREVIEW:")
+            print(ticket_section[:2000])
 
         if ticket_found and not previous_state[camping_type]:
 
             message = (
                 "🚨🚨🚨 PUKKELPOP SATURDAY TICKET FOUND 🚨🚨🚨\n\n"
-                f"Camping option: {camping_type}\n\n"
+                f"Camping option: {camping_type}\n"
+                f"Price: {price}\n\n"
                 f"{url}"
             )
 
