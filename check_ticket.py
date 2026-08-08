@@ -25,7 +25,6 @@ def send_telegram(message):
     )
 
     print("Telegram status:", response.status_code)
-    print(response.text)
 
 # TEST MESSAGE
 send_telegram("✅ SATURDAY BOT TEST")
@@ -33,13 +32,19 @@ send_telegram("✅ SATURDAY BOT TEST")
 for camping_type, url in URLS.items():
 
     try:
-        html = requests.get(
+
+        response = requests.get(
             url,
             headers={"User-Agent": "Mozilla/5.0"},
             timeout=30
-        ).text
+        )
+
+        response.raise_for_status()
+
+        html = response.text
 
     except Exception as e:
+
         print(f"ERROR ({camping_type}): {e}")
         continue
 
@@ -63,4 +68,4 @@ Open immediately:
         print(alert_message)
 
         for i in range(5):
-            send_telegram(alert_message)e)
+            send_telegram(alert_message)
