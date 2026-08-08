@@ -1,0 +1,25 @@
+name: Run Sunday ticket checker
+
+on:
+  schedule:
+    - cron: "* * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run Sunday Ticket Checker
+        env:
+          SISTER_TELEGRAM_TOKEN: ${{ secrets.SISTER_TELEGRAM_TOKEN }}
+          SISTER_TELEGRAM_CHAT_ID: ${{ secrets.SISTER_TELEGRAM_CHAT_ID }}
+        run: python check_sunday.py
